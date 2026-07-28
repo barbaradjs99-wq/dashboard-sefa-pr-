@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard SEFA-PR — Repasses aos Municípios 2026</title>
+<style>
+:root{
+  --azul:#053765;
+  --azul2:#0a4d86;
+  --verde:#08783f;
+  --bg:#f3f6f9;
+  --card:#ffffff;
+  --texto:#142033;
+  --muted:#5b6778;
+  --borda:#dce3ea;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--texto)}
+header{
+  background:linear-gradient(90deg,#062f59,#082f55 60%,#052845);
+  color:white;padding:18px 28px;display:grid;grid-template-columns:190px 1fr 180px;
+  align-items:center;gap:18px;box-shadow:0 2px 8px #0003
+}
+.brand{font-weight:800;font-size:34px;line-height:1}
+.brand small{display:block;font-size:12px;font-weight:500;margin-top:6px}
+.brand .pr{color:#4fc86e;font-weight:500}
+.title h1{font-size:26px;margin:0 0 6px}
+.title p{font-size:18px;margin:0}
+.gov{text-align:right;font-weight:800;font-size:25px}
+.gov small{display:block;font-size:11px;font-weight:500}
+main{padding:20px 24px 14px;max-width:1600px;margin:auto}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:14px}
+.card{
+  background:var(--card);border:1px solid var(--borda);border-radius:12px;
+  box-shadow:0 2px 7px #26374b18
+}
+.kpi{padding:16px;min-height:170px;display:flex;gap:14px;align-items:flex-start}
+.icon{
+  width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:var(--azul);color:white;font-size:27px;flex:0 0 auto
+}
+.icon.green{background:var(--verde)}
+.kpi-content{width:100%;text-align:center}
+.kpi h3{font-size:15px;margin:2px 0 14px;text-transform:uppercase}
+.kpi .big{font-weight:800;font-size:31px;color:var(--azul);line-height:1.05}
+.kpi .big.green{color:var(--verde)}
+.kpi .sub{margin-top:9px;font-size:16px;color:#2d3748}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.panel{overflow:hidden}
+.panel h2{
+  margin:0;background:linear-gradient(90deg,var(--azul),#074b82);
+  color:#fff;padding:8px 14px;font-size:16px
+}
+.panel-body{padding:14px;height:310px}
+.panel.tall .panel-body{height:330px}
+svg{width:100%;height:100%;display:block}
+.legend{font-size:12px}
+footer{display:flex;justify-content:space-between;gap:12px;color:#39485a;font-size:12px;padding:4px 8px 12px}
+.controls{display:flex;justify-content:flex-end;margin:0 0 12px}
+button{
+  border:0;border-radius:8px;padding:9px 14px;background:var(--azul);
+  color:white;font-weight:700;cursor:pointer
+}
+button:hover{background:#0b4e86}
+@media(max-width:1100px){
+  header{grid-template-columns:1fr;text-align:center}.gov{text-align:center}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .grid{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+  main{padding:12px}.kpis{grid-template-columns:1fr}.title h1{font-size:20px}
+  .title p{font-size:15px}.panel-body{height:280px}.brand{font-size:28px}
+  footer{flex-direction:column}
+}
+@media print{
+  .controls{display:none} body{background:white} main{max-width:none}
+  .card{box-shadow:none}.panel-body{height:270px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">SEFA <span class="pr">PR</span><small>SECRETARIA DA FAZENDA<br>DO PARANÁ</small></div>
+  <div class="title">
+    <h1>ANÁLISE DOS REPASSES AOS MUNICÍPIOS DO PARANÁ POR REGIÃO</h1>
+    <p>Distribuição Regional dos Recursos Públicos e Repasse Per Capita – 2026</p>
+  </div>
+  <div class="gov">PARANÁ<small>GOVERNO DO ESTADO</small></div>
+</header>
+
+<main>
+  <div class="controls"><button onclick="window.print()">Exportar / Imprimir em PDF</button></div>
+
+
+  <section class="card" style="padding:14px;margin-bottom:14px">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button id="btnAtualizarIBGE" type="button">Atualizar municípios pelo IBGE</button>
+      <label style="background:#eef3f8;border:1px solid #dce3ea;border-radius:8px;padding:8px 12px;font-weight:700;cursor:pointer">
+        Importar CSV de repasses
+        <input id="csvInput" type="file" accept=".csv,text/csv" style="display:none">
+      </label>
+      <span id="statusDados" style="font-size:13px;color:#5b6778">Dados regionais carregados do arquivo.</span>
+    </div>
+    <details style="margin-top:10px">
+      <summary style="cursor:pointer;font-weight:700">Fontes oficiais utilizadas</summary>
+      <div style="font-size:13px;line-height:1.7;margin-top:8px">
+        <div><b>Municípios do Paraná — API IBGE:</b>
+          <a href="https://servicodados.ibge.gov.br/api/v1/localidades/estados/41/municipios" target="_blank" rel="noopener">
+            servicodados.ibge.gov.br/api/v1/localidades/estados/41/municipios
+          </a>
+        </div>
+        <div><b>Estimativas populacionais — IBGE:</b>
+          <a href="https://www.ibge.gov.br/estatisticas/sociais/populacao/9103-estimativas-de-populacao.html" target="_blank" rel="noopener">
+            Estimativas da população
+          </a>
+        </div>
+        <div><b>Portal da Transparência do Paraná:</b>
+          <a href="https://www.transparencia.pr.gov.br/" target="_blank" rel="noopener">
+            transparencia.pr.gov.br
+          </a>
+        </div>
+        <div><b>Dados Abertos do Paraná:</b>
+          <a href="https://www.dados.pr.gov.br/" target="_blank" rel="noopener">
+            dados.pr.gov.br
+          </a>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <section class="kpis">
+    <article class="card kpi"><div class="icon">R$</div><div class="kpi-content"><h3>Total repassado</h3><div class="big" id="kpiTotalGrande">R$ 4,03<br>bilhões</div><div class="sub" id="kpiTotalExato">R$ 4.027.355.425,59</div></div></article>
+    <article class="card kpi"><div class="icon green">👥</div><div class="kpi-content"><h3>Total de habitantes</h3><div class="big green" id="kpiPopGrande">11,15<br>milhões</div><div class="sub" id="kpiPopExata">11.150.000 habitantes</div></div></article>
+    <article class="card kpi"><div class="icon">📈</div><div class="kpi-content"><h3>Região que mais recebeu</h3><div class="big" id="kpiMaiorRegiao">LESTE</div><div class="sub" id="kpiMaiorRegiaoSub"><b>R$ 1,72 bilhões</b><br>R$ 1.722.797.330,79</div></div></article>
+    <article class="card kpi"><div class="icon green">●</div><div class="kpi-content"><h3>Maior repasse per capita</h3><div class="big green" id="kpiPerCapitaRegiao">NOROESTE</div><div class="sub" id="kpiPerCapitaSub"><b>R$ 450,93</b><br>por habitante</div></div></article>
+    <article class="card kpi"><div class="icon">🏛</div><div class="kpi-content"><h3>Número de municípios</h3><div class="big" id="kpiMunicipios">399</div><div class="sub"><b>MUNICÍPIOS</b></div></div></article>
+  </section>
+
+  <section class="grid">
+    <article class="card panel"><h2>1. VALOR RECEBIDO POR REGIÃO</h2><div class="panel-body"><svg id="barChart"></svg></div></article>
+    <article class="card panel"><h2>2. REPASSE POR HABITANTE (VALOR PER CAPITA)</h2><div class="panel-body"><svg id="hBarChart"></svg></div></article>
+  </section>
+
+  <section class="grid">
+    <article class="card panel tall"><h2>3. PARTICIPAÇÃO NO TOTAL DOS RECURSOS</h2><div class="panel-body"><svg id="donutChart"></svg></div></article>
+    <article class="card panel tall"><h2>4. RELAÇÃO ENTRE POPULAÇÃO E VALOR RECEBIDO</h2><div class="panel-body"><svg id="scatterChart"></svg></div></article>
+  </section>
+
+  <footer>
+    <div><b>Fonte:</b> SEFA-PR – Dados de Repasses aos Municípios – 2026</div>
+    <div><i>Valores líquidos repassados. População estimada com base em projeções IBGE 2026.</i></div>
+  </footer>
+</main>
+
+<script>
+let data = [
+  {regiao:"Leste", habitantes:4200000, valor:1722797330.79, percapita:410.19, cor:"#0b4f8a"},
+  {regiao:"Oeste", habitantes:1350000, valor:553407060.48, percapita:409.93, cor:"#208d4e"},
+  {regiao:"Norte", habitantes:1900000, valor:537723653.23, percapita:283.01, cor:"#72ae43"},
+  {regiao:"Noroeste", habitantes:900000, valor:405836032.45, percapita:450.93, cor:"#1d9ec7"},
+  {regiao:"Campos Gerais", habitantes:1150000, valor:401027836.24, percapita:348.72, cor:"#f4b000"},
+  {regiao:"Sudoeste", habitantes:650000, valor:210127022.01, percapita:323.27, cor:"#f58218"},
+  {regiao:"Centro-Sul", habitantes:1000000, valor:196436490.39, percapita:196.44, cor:"#7e5bb5"}
+];
+
+const NS="http://www.w3.org/2000/svg";
+function el(tag,attrs={},text=""){const e=document.createElementNS(NS,tag);for(const[k,v]of Object.entries(attrs))e.setAttribute(k,v);if(text)e.textContent=text;return e}
+function clear(svg){while(svg.firstChild)svg.removeChild(svg.firstChild)}
+function fmtMi(v){return (v/1e6).toLocaleString("pt-BR",{minimumFractionDigits:0,maximumFractionDigits:0})+" Mi"}
+function fmtMoney(v){return "R$ "+v.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}
+function size(svg){const r=svg.getBoundingClientRect();return {w:Math.max(r.width,500),h:Math.max(r.height,250)}}
+
+function barChart(){
+ const svg=document.getElementById("barChart"); clear(svg); const {w,h}=size(svg); svg.setAttribute("viewBox",`0 0 ${w} ${h}`);
+ const m={l:72,r:18,t:18,b:58}, iw=w-m.l-m.r, ih=h-m.t-m.b, max=2000e6;
+ for(let i=0;i<=5;i++){let y=m.t+ih-i*ih/5,v=i*max/5;svg.append(el("line",{x1:m.l,y1:y,x2:w-m.r,y2:y,stroke:"#d8dee6"}));svg.append(el("text",{x:m.l-10,y:y+4,"text-anchor":"end","font-size":"12"},i===0?"0":fmtMi(v)))}
+ const bw=iw/data.length*.58;
+ data.forEach((d,i)=>{let x=m.l+(i+.5)*iw/data.length-bw/2, bh=d.valor/max*ih,y=m.t+ih-bh;
+ svg.append(el("rect",{x,y,width:bw,height:bh,fill:"#075391",rx:"2"}));
+ svg.append(el("text",{x:x+bw/2,y:y-8,"text-anchor":"middle","font-size":"12","font-weight":"700"},`R$ ${(d.valor/1e9).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})} bi`.replace("0,","")));
+ let lines=d.regiao==="Campos Gerais"?["Campos","Gerais"]:[d.regiao];
+ lines.forEach((t,j)=>svg.append(el("text",{x:x+bw/2,y:m.t+ih+22+j*14,"text-anchor":"middle","font-size":"12"},t)));
+ });
+ svg.append(el("text",{x:18,y:m.t+ih/2,transform:`rotate(-90 18 ${m.t+ih/2})`,"text-anchor":"middle","font-size":"12"},"Valor recebido (R$)"));
+}
+
+function hBarChart(){
+ const svg=document.getElementById("hBarChart");clear(svg);const {w,h}=size(svg);svg.setAttribute("viewBox",`0 0 ${w} ${h}`);
+ const sorted=[...data].sort((a,b)=>b.percapita-a.percapita),m={l:105,r:70,t:10,b:35},iw=w-m.l-m.r,ih=h-m.t-m.b,max=500;
+ for(let i=0;i<=5;i++){let x=m.l+i*iw/5;svg.append(el("line",{x1:x,y1:m.t,x2:x,y2:m.t+ih,stroke:"#e2e7ed"}));svg.append(el("text",{x,y:h-10,"text-anchor":"middle","font-size":"11"},i*100))}
+ const bh=ih/sorted.length*.56;
+ sorted.forEach((d,i)=>{let y=m.t+(i+.5)*ih/sorted.length-bh/2,wv=d.percapita/max*iw;
+ svg.append(el("text",{x:m.l-10,y:y+bh/2+4,"text-anchor":"end","font-size":"12"},d.regiao));
+ svg.append(el("rect",{x:m.l,y,width:wv,height:bh,fill:"#17823f"}));
+ svg.append(el("text",{x:m.l+wv+9,y:y+bh/2+4,"font-size":"12"},fmtMoney(d.percapita)));
+ });
+ svg.append(el("text",{x:m.l+iw/2,y:h-1,"text-anchor":"middle","font-size":"12","font-weight":"700"},"R$ por habitante"));
+}
+
+function donutChart(){
+ const svg=document.getElementById("donutChart");clear(svg);const {w,h}=size(svg);svg.setAttribute("viewBox",`0 0 ${w} ${h}`);
+ const total=data.reduce((s,d)=>s+d.valor,0),cx=Math.min(w*.25,170),cy=h/2,r=Math.min(105,h*.36),inner=r*.48;
+ let a=-Math.PI/2;
+ data.forEach(d=>{let frac=d.valor/total,a2=a+frac*Math.PI*2;
+ const p1=[cx+r*Math.cos(a),cy+r*Math.sin(a)],p2=[cx+r*Math.cos(a2),cy+r*Math.sin(a2)];
+ const q1=[cx+inner*Math.cos(a2),cy+inner*Math.sin(a2)],q2=[cx+inner*Math.cos(a),cy+inner*Math.sin(a)];
+ const large=frac>.5?1:0;
+ const path=`M ${p1[0]} ${p1[1]} A ${r} ${r} 0 ${large} 1 ${p2[0]} ${p2[1]} L ${q1[0]} ${q1[1]} A ${inner} ${inner} 0 ${large} 0 ${q2[0]} ${q2[1]} Z`;
+ svg.append(el("path",{d:path,fill:d.cor,stroke:"#fff","stroke-width":"1"}));
+ const mid=(a+a2)/2,tx=cx+(r*.74)*Math.cos(mid),ty=cy+(r*.74)*Math.sin(mid);
+ if(frac>.045)svg.append(el("text",{x:tx,y:ty+4,"text-anchor":"middle","font-size":"12",fill:"#fff","font-weight":"700"},(frac*100).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})+"%"));
+ a=a2;
+ });
+ const lx=Math.max(w*.47,300),start=35,row=31;
+ data.forEach((d,i)=>{let y=start+i*row;svg.append(el("circle",{cx:lx,cy:y-4,r:7,fill:d.cor}));svg.append(el("text",{x:lx+15,y,"font-size":"12"},d.regiao));
+ const pct=(d.valor/total*100).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})+"%";
+ svg.append(el("text",{x:w-165,y,"text-anchor":"end","font-size":"12","font-weight":"700"},pct));
+ svg.append(el("text",{x:w-8,y,"text-anchor":"end","font-size":"11"},fmtMoney(d.valor)));
+ });
+ svg.append(el("line",{x1:lx,y1:start+data.length*row-12,x2:w-8,y2:start+data.length*row-12,stroke:"#9aa7b6"}));
+ svg.append(el("text",{x:w-165,y:start+data.length*row+10,"text-anchor":"end","font-size":"12","font-weight":"700"},"100%"));
+ svg.append(el("text",{x:w-8,y:start+data.length*row+10,"text-anchor":"end","font-size":"11"},fmtMoney(total)));
+}
+
+function scatterChart(){
+ const svg=document.getElementById("scatterChart");clear(svg);const {w,h}=size(svg);svg.setAttribute("viewBox",`0 0 ${w} ${h}`);
+ const m={l:72,r:22,t:18,b:48},iw=w-m.l-m.r,ih=h-m.t-m.b,maxX=5000000,maxY=2000e6;
+ for(let i=0;i<=5;i++){let x=m.l+i*iw/5;svg.append(el("line",{x1:x,y1:m.t,x2:x,y2:m.t+ih,stroke:"#e0e5eb"}));svg.append(el("text",{x,y:h-18,"text-anchor":"middle","font-size":"11"},(i*1e6).toLocaleString("pt-BR")))}
+ for(let i=0;i<=4;i++){let y=m.t+ih-i*ih/4;svg.append(el("line",{x1:m.l,y1:y,x2:w-m.r,y2:y,stroke:"#e0e5eb"}));svg.append(el("text",{x:m.l-10,y:y+4,"text-anchor":"end","font-size":"11"},i===0?"0":fmtMi(i*500e6)))}
+ data.forEach(d=>{let x=m.l+d.habitantes/maxX*iw,y=m.t+ih-d.valor/maxY*ih;
+ svg.append(el("circle",{cx:x,cy:y,r:d.regiao==="Leste"?12:8,fill:"#2788c4",stroke:"#0a5f94","stroke-width":"1"}));
+ const anchor=x>w*.76?"end":"start",dx=anchor==="end"?-8:8;
+ svg.append(el("text",{x:x+dx,y:y-10,"text-anchor":anchor,"font-size":"11","font-weight":"700"},d.regiao));
+ svg.append(el("text",{x:x+dx,y:y+4,"text-anchor":anchor,"font-size":"10"},`(${(d.habitantes/1e6).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})} mi hab.)`));
+ });
+ svg.append(el("text",{x:m.l+iw/2,y:h-2,"text-anchor":"middle","font-size":"12"},"Habitantes"));
+ svg.append(el("text",{x:16,y:m.t+ih/2,transform:`rotate(-90 16 ${m.t+ih/2})`,"text-anchor":"middle","font-size":"12"},"Valor recebido (R$)"));
+}
+
+
+function atualizarKPIs(){
+  const total=data.reduce((s,d)=>s+Number(d.valor||0),0);
+  const pop=data.reduce((s,d)=>s+Number(d.habitantes||0),0);
+  const maior=[...data].sort((a,b)=>b.valor-a.valor)[0];
+  const maiorPC=[...data].sort((a,b)=>b.percapita-a.percapita)[0];
+
+  document.getElementById("kpiTotalGrande").innerHTML =
+    "R$ "+(total/1e9).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})+"<br>bilhões";
+  document.getElementById("kpiTotalExato").textContent = fmtMoney(total);
+
+  document.getElementById("kpiPopGrande").innerHTML =
+    (pop/1e6).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})+"<br>milhões";
+  document.getElementById("kpiPopExata").textContent =
+    pop.toLocaleString("pt-BR")+" habitantes";
+
+  document.getElementById("kpiMaiorRegiao").textContent = maior.regiao.toUpperCase();
+  document.getElementById("kpiMaiorRegiaoSub").innerHTML =
+    "<b>R$ "+(maior.valor/1e9).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})+
+    " bilhões</b><br>"+fmtMoney(maior.valor);
+
+  document.getElementById("kpiPerCapitaRegiao").textContent = maiorPC.regiao.toUpperCase();
+  document.getElementById("kpiPerCapitaSub").innerHTML =
+    "<b>"+fmtMoney(maiorPC.percapita)+"</b><br>por habitante";
+}
+
+async function atualizarMunicipiosIBGE(){
+  const status=document.getElementById("statusDados");
+  status.textContent="Consultando a API oficial do IBGE...";
+  try{
+    const url="https://servicodados.ibge.gov.br/api/v1/localidades/estados/41/municipios";
+    const resp=await fetch(url);
+    if(!resp.ok) throw new Error("HTTP "+resp.status);
+    const municipios=await resp.json();
+    document.getElementById("kpiMunicipios").textContent =
+      municipios.length.toLocaleString("pt-BR");
+    status.textContent="Municípios atualizados pela API do IBGE: "+municipios.length+".";
+  }catch(err){
+    status.textContent="Não foi possível consultar o IBGE. Mantido o valor salvo no arquivo.";
+    console.error(err);
+  }
+}
+
+function parseNumeroBR(valor){
+  if(typeof valor==="number") return valor;
+  let s=String(valor??"").trim().replace(/\s/g,"").replace(/^R\$/i,"");
+  if(s.includes(",") && s.includes(".")) s=s.replace(/\./g,"").replace(",",".");
+  else if(s.includes(",")) s=s.replace(",",".");
+  return Number(s);
+}
+
+function importarCSV(texto){
+  const linhas=texto.trim().split(/\r?\n/).filter(Boolean);
+  if(linhas.length<2) throw new Error("CSV vazio.");
+  const sep=(linhas[0].split(";").length > linhas[0].split(",").length)?";":",";
+  const cab=linhas[0].split(sep).map(x=>x.trim().toLowerCase());
+  const idx=(...nomes)=>cab.findIndex(c=>nomes.includes(c));
+  const ir=idx("regiao","região");
+  const ih=idx("habitantes","populacao","população");
+  const iv=idx("valor","repasse","valor_repassado");
+  const ip=idx("percapita","per_capita","repasse_per_capita");
+  if([ir,ih,iv].some(i=>i<0)) throw new Error("Use as colunas: regiao;habitantes;valor;percapita");
+  const cores=["#0b4f8a","#208d4e","#72ae43","#1d9ec7","#f4b000","#f58218","#7e5bb5","#8d6e63"];
+  const nova=linhas.slice(1).map((l,i)=>{
+    const c=l.split(sep);
+    const habitantes=parseNumeroBR(c[ih]);
+    const valor=parseNumeroBR(c[iv]);
+    const pc=ip>=0?parseNumeroBR(c[ip]):valor/habitantes;
+    return {regiao:c[ir].trim(),habitantes,valor,percapita:pc,cor:cores[i%cores.length]};
+  }).filter(d=>d.regiao && Number.isFinite(d.habitantes) && Number.isFinite(d.valor));
+  if(!nova.length) throw new Error("Nenhuma linha válida encontrada.");
+  data=nova;
+  atualizarKPIs();
+  drawAll();
+  document.getElementById("statusDados").textContent="CSV importado com sucesso: "+nova.length+" regiões.";
+}
+
+document.getElementById("btnAtualizarIBGE").addEventListener("click",atualizarMunicipiosIBGE);
+document.getElementById("csvInput").addEventListener("change",async e=>{
+  const arq=e.target.files?.[0];
+  if(!arq) return;
+  try{ importarCSV(await arq.text()); }
+  catch(err){ document.getElementById("statusDados").textContent="Erro no CSV: "+err.message; }
+});
+
+function drawAll(){barChart();hBarChart();donutChart();scatterChart();atualizarKPIs()}
+window.addEventListener("load",()=>{drawAll();atualizarMunicipiosIBGE();});
+window.addEventListener("resize",()=>{clearTimeout(window._rt);window._rt=setTimeout(drawAll,100)});
+</script>
+</body>
+</html>
